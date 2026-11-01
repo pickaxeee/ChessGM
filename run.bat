@@ -4,6 +4,7 @@ rem Chess GM launcher for Windows.
 rem Opens a Chromium-based browser with the extension loaded from this folder,
 rem using a separate browser profile so your normal windows are untouched.
 rem Double-click this file, or in CMD: cd into this folder and type run.bat
+rem Pass --no-pause to skip the final "press any key" (the installer does this).
 
 set "EXT_DIR=%~dp0"
 if "%EXT_DIR:~-1%"=="\" set "EXT_DIR=%EXT_DIR:~0,-1%"
@@ -83,6 +84,8 @@ goto end
 
 :end
 echo.
+if /i "%~1"=="--no-pause" goto done
 rem Keep the window open when started by double-click so the text above can be read.
 echo %cmdcmdline% | find /i "/c" >nul && pause
+:done
 endlocal
