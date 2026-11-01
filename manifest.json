@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Chess GM",
+  "version": "0.1.0",
+  "description": "Scratch-move pieces on the live board while you wait for your opponent, on chess.com and lichess. Right-drag moves, double right-click marks a square red.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.chess.com/*", "*://lichess.org/*", "*://*.lichess.org/*"],
+      "js": ["src/core.js", "src/adapters.js", "src/content.js"],
+      "css": ["src/overlay.css"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ]
+}

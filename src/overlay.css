@@ -1,0 +1,75 @@
+/* Chess GM overlay. Everything is pointer-events: none so left-click play is untouched. */
+
+.cgm-overlay {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  display: none;
+  pointer-events: none;
+  z-index: 2147483000;
+  --cgm-square: 50px;
+}
+
+.cgm-overlay.cgm-visible {
+  display: block;
+}
+
+.cgm-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.cgm-piece {
+  position: absolute;
+  width: 12.5%;
+  height: 12.5%;
+  box-sizing: border-box;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+}
+
+.cgm-piece.cgm-glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "DejaVu Sans", sans-serif;
+  font-size: calc(var(--cgm-square) * 0.82);
+  line-height: 1;
+  color: #111;
+  text-shadow: 0 0 2px #fff, 0 0 2px #fff;
+}
+
+.cgm-piece.cgm-drag {
+  opacity: 0.92;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45));
+}
+
+.cgm-mark,
+.cgm-lastmove {
+  position: absolute;
+  width: 12.5%;
+  height: 12.5%;
+}
+
+.cgm-mark {
+  background: rgba(235, 97, 80, 0.8);
+}
+
+.cgm-lastmove {
+  background: rgba(255, 191, 0, 0.35);
+}
+
+.cgm-badge {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(20, 20, 20, 0.78);
+  color: #fff;
+  font: 12px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  white-space: nowrap;
+}

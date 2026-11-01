@@ -1,0 +1,10 @@
+{
+  "name": "chess-gm",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome extension for chess.com and lichess: scratch-move pieces on the live board while you wait for your opponent.",
+  "scripts": {
+    "test": "node --test test/core.test.js",
+    "test:e2e": "node scripts/e2e.js"
+  }
+}
