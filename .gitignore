@@ -1,5 +1,3 @@
-# Browser profile created by start.bat / start.sh
-.profile/
 
 # Playwright profile used by the end-to-end test
 .e2e-profile/

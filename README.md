@@ -33,149 +33,104 @@ A small badge in the corner of the board shows how many scratch moves you have
 played and which keys are available. The from and to squares of the latest
 scratch move are tinted.
 
-## Install in one command
+## Install
 
-You need a Chromium-based browser: Chromium, Brave, Microsoft Edge, or Google
-Chrome. Edge is already on every Windows PC, so you probably have one.
+You need a Chromium-based browser: Google Chrome, Brave, Microsoft Edge, or
+Chromium. Edge is already on every Windows PC, so you probably have one.
+Firefox and Safari are not supported.
 
-**Windows.** Open CMD (or PowerShell) and paste:
+Installing is two steps: get the files, then add the folder to your browser
+once with **Load unpacked**. After that the extension stays installed and
+there is nothing to launch; just open chess.com.
+
+### Windows
+
+Open CMD and paste this one line:
 
 ```bat
-powershell -c "irm https://raw.githubusercontent.com/pickaxeee/ChessGM/main/install.ps1 | iex"
+curl -L -o "%TEMP%\chessgm.zip" https://github.com/pickaxeee/ChessGM/archive/refs/heads/main.zip && tar -xf "%TEMP%\chessgm.zip" -C "%LocalAppData%" && "%LocalAppData%\ChessGM-main\setup.bat"
 ```
 
-**macOS and Linux.** Open a terminal and paste:
+If your terminal is PowerShell instead of CMD, paste this one:
+
+```powershell
+curl.exe -L -o "$env:TEMP\chessgm.zip" https://github.com/pickaxeee/ChessGM/archive/refs/heads/main.zip; tar -xf "$env:TEMP\chessgm.zip" -C $env:LOCALAPPDATA; & "$env:LOCALAPPDATA\ChessGM-main\setup.bat"
+```
+
+Both use only tools built into Windows 10 and 11 (`curl` and `tar`). They
+download the code into `%LocalAppData%\ChessGM-main` and run `setup.bat`,
+which opens two windows: your browser's extensions page and a File Explorer
+window with the Chess GM folder selected. In the browser:
+
+1. Turn on **Developer mode** (switch in the top right).
+2. Click **Load unpacked**.
+3. Paste the folder path (it is already on your clipboard, so Ctrl+V) and
+   click **Select Folder**. Or drag the `ChessGM-main` folder from the
+   Explorer window onto the extensions page.
+
+Open chess.com or lichess and right-click-drag a piece. Done.
+
+### macOS and Linux
+
+Open a terminal and paste:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/pickaxeee/ChessGM/main/install.sh | sh
 ```
 
-What it does:
+It downloads the code into `~/.chessgm` and runs `setup.sh`, which opens your
+browser's extensions page and a Finder or file manager window. Then the same
+three steps: Developer mode, Load unpacked, pick the folder (its path is on
+your clipboard). Set `CHESS_GM_HOME` first to install somewhere else.
 
-- Downloads the latest code into `%LocalAppData%\ChessGM` on Windows or
-  `~/.chessgm` on Mac and Linux. Nothing else on your PC is touched.
-- On Windows, adds a **Chess GM** entry to the Start menu so next time you can
-  launch it without a terminal.
-- Launches it right away: a browser window opens on chess.com with the
-  extension loaded. Sign in once in that window (it has its own profile) and
-  play. See the Google Chrome note below if the window opens on the
-  extensions page instead.
+### Updating
 
-Next time, search the Start menu for "Chess GM", or run
-`%LocalAppData%\ChessGM\run.bat` (Windows) or `sh ~/.chessgm/run.sh` (Mac and
-Linux). Paste the install command again whenever you want the latest version;
-your sign-in is kept.
+Paste the same install command again. It replaces the files in place. Then go
+to `chrome://extensions` and click the reload icon on the Chess GM card, or
+restart the browser.
 
-To uninstall, delete that folder and the Start menu shortcut.
+### Uninstalling
 
-**If the browser that opened is Google Chrome:** Chrome 137 and newer refuse
-to load extensions from the command line, so the launcher opens Chrome's
-extensions page instead and copies the folder path to your clipboard. In that
-window, turn on **Developer mode** (top right), click **Load unpacked**, paste
-the path into the folder box, and click **Select Folder**. Then switch to the
-chess.com tab. You only do this once per profile.
+Click **Remove** on the Chess GM card in `chrome://extensions`, then delete
+the folder.
 
-If you would rather read a script before running it, both installers are in
-this repo: `install.ps1` and `install.sh`. They are short.
+### By hand, without the terminal
 
-## Install by hand on Windows
-
-**1. Get the files.**
-On the repo page, click the green **Code** button, then **Download ZIP**.
-Or, if you have git:
-
-```bat
-git clone https://github.com/pickaxeee/ChessGM.git
-```
-
-**2. Unzip.**
-Right-click the downloaded `ChessGM-main.zip` and choose **Extract All**.
-You get a folder named `ChessGM-main`. Open it. You should see `run.bat`,
-`manifest.json`, and a `src` folder inside.
-
-**3. Run `run.bat`.**
-Double-click `run.bat` in that folder. A black window appears with a few
-lines of text, and a browser window opens on chess.com.
-
-If you would rather use CMD, open CMD, go to the folder, and type the file
-name:
-
-```bat
-cd /d "C:\Users\you\Downloads\ChessGM-main"
-```
-
-```bat
-run.bat
-```
-
-Type `run.bat` exactly, not `run .bat`, and not `start run.bat` (Windows'
-`start` command is unrelated and will complain it cannot find the file).
-
-If Windows shows "Windows protected your PC", click **More info**, then
-**Run anyway**. That is SmartScreen reacting to a script downloaded from the
-internet. You can read the script first: it is plain text.
-
-**4. Sign in and play.**
-The browser window that opens has its own profile, stored in a `.profile`
-folder inside `ChessGM-main`, so you need to sign in to chess.com or lichess
-in it once. Start a game and right-click-drag a piece to try it. Close that
-window when you are done; next time, run `run.bat` again.
-
-To force a specific browser, set `CHESS_GM_BROWSER` to its exe path before
-running (this works for the one-command install too):
-
-```bat
-set "CHESS_GM_BROWSER=C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe"
-```
-
-## Install by hand on macOS and Linux
-
-Download and unzip the repo as above, or clone it. Then in a terminal:
-
-```bash
-cd ChessGM-main
-```
-
-```bash
-sh run.sh
-```
-
-It finds Chromium, Brave, Edge, or Chrome and behaves exactly like the Windows
-launcher, including the Chrome 137 fallback. Set `CHESS_GM_BROWSER` to a
-browser binary to override the choice.
-
-## Install in your everyday browser instead
-
-If you would rather not use a separate browser profile, load the extension
-into the browser you already use:
-
-1. Open `chrome://extensions` (or `brave://extensions`, `edge://extensions`).
-2. Turn on **Developer mode** (top right).
-3. Click **Load unpacked** and pick the `ChessGM-main` folder.
-4. Open a game on chess.com or lichess.
+1. On the repo page, click the green **Code** button, then **Download ZIP**.
+2. Right-click the downloaded `ChessGM-main.zip` and choose **Extract All**.
+3. Double-click `setup.bat` inside the extracted folder (Mac: run
+   `sh setup.sh` in a terminal), or skip it and go straight to
+   `chrome://extensions`, turn on **Developer mode**, click **Load unpacked**,
+   and pick the `ChessGM-main` folder.
 
 Keep the folder where it is. The browser loads the extension from it every
 time it starts, so deleting or moving the folder removes the extension.
 
 ## Troubleshooting
 
-**The install command says "irm is not recognized" or "running scripts is disabled"**
-Make sure you pasted the whole line, starting with `powershell -c`. If you are
-already inside PowerShell, this shorter form also works:
+**Windows Security said "Threats found" after running an earlier version**
+The first installer launched the browser from a script with the
+`--load-extension` flag, a separate profile, and a Start menu shortcut. That
+is the exact pattern the ChromeLoader malware family uses to sideload
+extensions, so Defender flagged it. This version does none of that: the
+extension is added through the browser's own Load unpacked, which Defender
+does not object to. Open **Windows Security**, then **Protection history**, to
+see what was quarantined; if it is a file inside a ChessGM folder you can
+remove it and run the current install command. Do not turn Defender off for
+this.
 
-```powershell
-irm https://raw.githubusercontent.com/pickaxeee/ChessGM/main/install.ps1 | iex
-```
+**"Windows cannot find ..." or "is not recognized" after pasting the command**
+Make sure you pasted the whole line into CMD, not PowerShell (or use the
+PowerShell variant). The line starts with `curl` and ends with `setup.bat"`.
 
-**"Windows cannot find '.bat'"**
-You typed `start .bat` or `start run.bat` in CMD, or typed into the Run
-dialog. Open the extracted folder in File Explorer and double-click `run.bat`,
-or in CMD `cd` into the folder and type `run.bat` by itself.
+**Nothing happens when I double-click `setup.bat`, or a window flashes by**
+Open CMD, `cd` into the extracted folder, and type `setup.bat` so you can read
+its output. If it cannot find a browser, add the folder by hand through
+`chrome://extensions` as described above.
 
-**The browser opened but there is no Chess GM extension**
-That browser ignores `--load-extension` (Google Chrome 137 and newer). Follow
-the "Load unpacked" steps in the Chrome note above. The `run.bat` window tells
-you the exact folder path to paste.
+**The extension card shows an error after an update**
+Click the reload icon on the card. If the error stays, click **Remove** and
+load the folder again.
 
 **A popup says "Disable developer mode extensions"**
 Chrome shows this on every start for unpacked extensions. Click the X or
@@ -188,10 +143,6 @@ changed its board markup, open an issue with the page URL.
 
 **Arrow keys stopped moving through the game's move list**
 A scratch line is open and has taken the arrows. Press Esc to close it.
-
-**Nothing happens when I double-click this folder's `run.sh` on a Mac**
-Finder opens `.sh` files in a text editor. Run it from Terminal with
-`sh run.sh` instead.
 
 ## How it works
 

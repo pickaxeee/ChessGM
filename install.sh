@@ -4,9 +4,11 @@
 # Paste this into a terminal:
 #   curl -fsSL https://raw.githubusercontent.com/pickaxeee/ChessGM/main/install.sh | sh
 #
-# It downloads the latest code into ~/.chessgm and launches run.sh. Run the
-# same command again any time to update; your browser sign-in (the .profile
-# folder) is kept. Set CHESS_GM_HOME to install somewhere else.
+# It downloads the latest code into ~/.chessgm and runs the one-time setup,
+# which opens your browser's extensions page so you can add the folder with
+# "Load unpacked". Run the same command again to update the files (then click
+# the reload icon on the Chess GM card in chrome://extensions).
+# Set CHESS_GM_HOME to install somewhere else.
 set -e
 
 REPO="pickaxeee/ChessGM"
@@ -35,20 +37,13 @@ if [ -z "$SRC" ] || [ ! -f "$SRC/manifest.json" ]; then
   exit 1
 fi
 
-# Replace the code but keep .profile, which holds the browser sign-in.
 mkdir -p "$DEST"
-for f in "$DEST"/* "$DEST"/.[!.]*; do
-  [ -e "$f" ] || continue
-  [ "$(basename "$f")" = ".profile" ] && continue
-  rm -rf "$f"
-done
+rm -rf "$DEST"/* "$DEST"/.[!.]* 2>/dev/null || true
 cp -R "$SRC"/. "$DEST"/
-chmod +x "$DEST/run.sh"
+chmod +x "$DEST/setup.sh"
 
-echo
 echo "Installed to $DEST"
-echo "Next time, run:  sh $DEST/run.sh"
 echo "Re-run the install command any time to update."
 echo
 
-exec sh "$DEST/run.sh"
+exec sh "$DEST/setup.sh"
