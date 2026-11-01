@@ -37,8 +37,11 @@ const CHESSCOM_PAGE = `<!doctype html><html><head><meta charset="utf-8"><style>
   <div class="piece bk square-58"></div>
   <div class="piece bn square-28"></div>
 </wc-chess-board>
+<input id="chat" style="position: absolute; left: 600px; top: 100px">
 <script>
   window.__right = { pointerdown: 0, mousedown: 0, contextmenu: 0, auxclick: 0 };
+  window.__arrows = 0;
+  window.addEventListener('keydown', (e) => { if (e.key.startsWith('Arrow')) window.__arrows++; });
   window.__left = 0;
   const b = document.querySelector('wc-chess-board');
   for (const t of Object.keys(window.__right)) b.addEventListener(t, (e) => { if (e.button === 2 || t === 'contextmenu') window.__right[t]++; });
@@ -151,6 +154,49 @@ async function testChesscom(context) {
   check(!st.pieces.some((p) => p.left === '50%' && p.top === '50%'), 'e4 is empty again');
   check((await hiddenOf('.piece.bp.square-47')) === 'hidden', 'captured real pawn on d7 is hidden');
 
+  // 3b. Arrow keys step through the scratch line, and the site does not see them while it is open.
+  await page.keyboard.press('ArrowLeft');
+  st = await overlayState(page);
+  check(
+    st.pieces.length === 2 && st.pieces.some((p) => p.left === '50%' && p.top === '50%') && !st.pieces.some((p) => p.left === '37.5%' && p.top === '12.5%'),
+    'left arrow undoes the capture: pawn back on e4',
+  );
+  check((await hiddenOf('.piece.bp.square-47')) === 'visible', 'real pawn on d7 visible again after undo');
+  check(st.badge.startsWith('Scratch line: 2 moves'), 'badge back to 2 moves: ' + JSON.stringify(st.badge));
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowLeft');
+  st = await overlayState(page);
+  check(st.visible && st.pieces.length === 0 && st.badge.startsWith('Scratch line: 0 moves'), 'undoing everything shows the real position but keeps the line open');
+  check((await hiddenOf('.piece.wp.square-52')) === 'visible', 'real pawn on e2 visible again after undoing everything');
+  await page.keyboard.press('ArrowLeft');
+  st = await overlayState(page);
+  check(st.visible && st.badge.startsWith('Scratch line: 0 moves'), 'extra left arrow at the start does nothing');
+  await page.keyboard.press('ArrowRight');
+  st = await overlayState(page);
+  check(st.pieces.length === 1 && st.pieces[0].left === '50%' && st.pieces[0].top === '50%', 'right arrow redoes e4');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  st = await overlayState(page);
+  check(st.pieces.some((p) => p.left === '37.5%' && p.top === '12.5%') && st.badge.startsWith('Scratch line: 3 moves'), 'two more right arrows redo through the capture');
+  await page.keyboard.press('ArrowRight');
+  st = await overlayState(page);
+  check(st.badge.startsWith('Scratch line: 3 moves'), 'extra right arrow at the end does nothing');
+  await page.keyboard.press('ArrowLeft');
+  await rightDrag(page, 'e4', 'e5', false);
+  await page.keyboard.press('ArrowRight');
+  st = await overlayState(page);
+  check(st.pieces.some((p) => p.left === '50%' && p.top === '37.5%') && st.badge.startsWith('Scratch line: 3 moves'), 'a new move after undo replaces the redo branch');
+  check((await page.evaluate(() => window.__arrows)) === 0, 'site saw no arrow keys while the scratch line was open');
+  await page.focus('#chat');
+  await page.keyboard.type('ab');
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.type('X');
+  check((await page.inputValue('#chat')) === 'aXb', 'arrow keys still work inside text fields while the line is open');
+  await page.evaluate(() => {
+    document.activeElement.blur();
+    window.__arrows = 0;
+  });
+
   // 4. Double right-click marks d5 red; a second double click clears it.
   await doubleRightClick(page, 'd5', false);
   st = await overlayState(page);
@@ -172,6 +218,8 @@ async function testChesscom(context) {
   st = await overlayState(page);
   check(!st.visible && st.pieces.length === 0 && st.marks.length === 0, 'Escape clears the scratch line and the marks');
   check((await hiddenOf('.piece.wp.square-52')) === 'visible', 'real pawn is visible again after Escape');
+  await page.keyboard.press('ArrowLeft');
+  check((await page.evaluate(() => window.__arrows)) === 1, 'arrow keys reach the site again once the line is closed');
 
   // 7. A real move on the live board (the opponent moved) resets the scratch line.
   await rightDrag(page, 'e2', 'e4', false);

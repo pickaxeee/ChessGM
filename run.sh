@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Chess GM launcher for macOS and Linux. Opens a Chromium-based browser with
+# Chess GM launcher for macOS and Linux. Run it with:  sh run.sh Opens a Chromium-based browser with
 # the extension loaded from this folder, using a separate profile so it does
 # not interfere with your normal browser windows.
 set -e

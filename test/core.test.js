@@ -142,3 +142,49 @@ test('double right-click fires on the second click on one square within the wind
   assert.equal(detect('e4', 2500), false, 'too slow');
   assert.equal(detect('e4', 2900), true);
 });
+
+test('scratch history undoes, redoes, and drops the redo branch on a new move', () => {
+  const base = { e2: W('p'), e7: B('p') };
+  const h = core.createScratchHistory(base);
+  assert.deepEqual(h.position, base);
+  assert.notEqual(h.position, base, 'the base is copied, not shared');
+  assert.equal(h.moveCount, 0);
+  assert.equal(h.canUndo, false);
+  assert.equal(h.canRedo, false);
+  assert.equal(h.undo(), false);
+  assert.equal(h.redo(), false);
+
+  const m1 = core.applyScratchMove(h.position, 'e2', 'e4');
+  h.push(m1.position, { from: 'e2', to: 'e4' });
+  const m2 = core.applyScratchMove(h.position, 'e7', 'e5');
+  h.push(m2.position, { from: 'e7', to: 'e5' });
+  assert.equal(h.moveCount, 2);
+  assert.deepEqual(h.lastMove, { from: 'e7', to: 'e5' });
+  assert.deepEqual(h.position, { e4: W('p'), e5: B('p') });
+
+  assert.equal(h.undo(), true);
+  assert.equal(h.moveCount, 1);
+  assert.equal(h.canRedo, true);
+  assert.equal(h.redoCount, 1);
+  assert.deepEqual(h.position, { e4: W('p'), e7: B('p') });
+  assert.deepEqual(h.lastMove, { from: 'e2', to: 'e4' });
+
+  assert.equal(h.undo(), true);
+  assert.equal(h.moveCount, 0);
+  assert.deepEqual(h.position, base);
+  assert.equal(h.lastMove, null);
+  assert.equal(h.undo(), false, 'nothing left to undo');
+
+  assert.equal(h.redo(), true);
+  assert.equal(h.redo(), true);
+  assert.equal(h.redo(), false, 'nothing left to redo');
+  assert.equal(h.moveCount, 2);
+
+  // undo once, then a different move: the old redo branch is gone
+  h.undo();
+  const m3 = core.applyScratchMove(h.position, 'e7', 'e6');
+  h.push(m3.position, { from: 'e7', to: 'e6' });
+  assert.equal(h.moveCount, 2);
+  assert.equal(h.canRedo, false);
+  assert.deepEqual(h.position, { e4: W('p'), e6: B('p') });
+});

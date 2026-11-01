@@ -150,6 +150,36 @@
     return out;
   }
 
+  // Undo/redo history for a scratch line. Entry 0 is the live position the
+  // line started from. push() after an undo drops the redo branch.
+  function createScratchHistory(base) {
+    const entries = [{ position: clonePosition(base), lastMove: null }];
+    let cursor = 0;
+    return {
+      get position() { return entries[cursor].position; },
+      get lastMove() { return entries[cursor].lastMove; },
+      get moveCount() { return cursor; },
+      get redoCount() { return entries.length - 1 - cursor; },
+      get canUndo() { return cursor > 0; },
+      get canRedo() { return cursor < entries.length - 1; },
+      push(position, lastMove) {
+        entries.length = cursor + 1;
+        entries.push({ position, lastMove });
+        cursor += 1;
+      },
+      undo() {
+        if (cursor === 0) return false;
+        cursor -= 1;
+        return true;
+      },
+      redo() {
+        if (cursor >= entries.length - 1) return false;
+        cursor += 1;
+        return true;
+      },
+    };
+  }
+
   // Returns detect(square, now). It is true on the second click on the same
   // square within windowMs, and resets after each detection.
   function createDoubleClickDetector(windowMs) {
@@ -184,6 +214,7 @@
     positionsEqual,
     applyScratchMove,
     diffPositions,
+    createScratchHistory,
     createDoubleClickDetector,
   };
 });

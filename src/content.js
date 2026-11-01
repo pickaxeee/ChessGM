@@ -9,6 +9,7 @@
  *   right-drag a piece         move it on a scratch copy of the position
  *                              (any piece, either color, no legality check)
  *   double right-click         toggle a red mark on that square
+ *   left / right arrow         undo / redo the last scratch move
  *   Escape                     clear the scratch line and the marks
  *
  * The scratch line is drawn on an overlay above the real board. Live pieces
@@ -35,9 +36,7 @@
   let badge = null;
 
   let base = null; // live position when the scratch line or the marks began
-  let scratch = null; // current scratch position, or null when inactive
-  let moveCount = 0;
-  let lastMove = null; // {from, to} of the latest scratch move
+  let line = null; // scratch history (core.createScratchHistory), or null when inactive
   let hidden = []; // live piece elements hidden under scratch pieces
   const marks = new Set();
   let drag = null; // {from, x, y, moved, piece, node}
@@ -66,7 +65,7 @@
   }
 
   function isActive() {
-    return !!scratch || marks.size > 0 || !!drag;
+    return !!line || marks.size > 0 || !!drag;
   }
 
   function syncRect() {
@@ -118,6 +117,15 @@
     return node;
   }
 
+  function badgeText() {
+    const n = line.moveCount;
+    let text = 'Scratch line: ' + n + (n === 1 ? ' move' : ' moves');
+    if (line.canUndo && line.canRedo) text += ' · ← undo · → redo';
+    else if (line.canUndo) text += ' · ← undo';
+    else if (line.canRedo) text += ' · → redo';
+    return text + ' · Esc clears';
+  }
+
   function render() {
     if (!board) return;
     ensureOverlay();
@@ -126,9 +134,9 @@
     piecesLayer.replaceChildren();
     marksLayer.replaceChildren();
 
-    if (scratch) {
+    if (line) {
       const { position, elements } = adapter.readPieces(board);
-      for (const d of core.diffPositions(position, scratch)) {
+      for (const d of core.diffPositions(position, line.position)) {
         if (d.live && elements[d.square]) {
           elements[d.square].style.visibility = 'hidden';
           hidden.push(elements[d.square]);
@@ -139,8 +147,8 @@
           piecesLayer.appendChild(node);
         }
       }
-      if (lastMove) {
-        for (const sq of [lastMove.from, lastMove.to]) {
+      if (line.lastMove) {
+        for (const sq of [line.lastMove.from, line.lastMove.to]) {
           const m = el('div', 'cgm-lastmove');
           placeOnSquare(m, sq);
           marksLayer.appendChild(m);
@@ -154,8 +162,8 @@
       marksLayer.appendChild(m);
     }
 
-    if (scratch) {
-      badge.textContent = 'Scratch line: ' + moveCount + (moveCount === 1 ? ' move' : ' moves') + ' · Esc resets';
+    if (line) {
+      badge.textContent = badgeText();
       badge.style.display = '';
     } else {
       badge.style.display = 'none';
@@ -172,11 +180,9 @@
     if (!base) base = adapter.readPieces(board).position;
   }
 
-  function startScratch() {
+  function startLine() {
     ensureBase();
-    scratch = core.clonePosition(base);
-    moveCount = 0;
-    lastMove = null;
+    line = core.createScratchHistory(base);
   }
 
   function cancelDrag() {
@@ -185,13 +191,15 @@
     drag = null;
   }
 
-  function resetAll() {
+  function clearState() {
     cancelDrag();
     base = null;
-    scratch = null;
-    moveCount = 0;
-    lastMove = null;
+    line = null;
     marks.clear();
+  }
+
+  function resetAll() {
+    clearState();
     render();
   }
 
@@ -228,12 +236,7 @@
     if (isActive()) {
       for (const node of hidden) node.style.visibility = '';
       hidden = [];
-      cancelDrag();
-      base = null;
-      scratch = null;
-      moveCount = 0;
-      lastMove = null;
-      marks.clear();
+      clearState();
     }
     attachBoard(next);
     if (overlay) render();
@@ -268,7 +271,7 @@
     if (drag) return; // the mousedown that follows a pointerdown, or a second pointer
     const from = squareAt(e.clientX, e.clientY);
     if (!from) return;
-    const position = scratch || adapter.readPieces(board).position;
+    const position = line ? line.position : adapter.readPieces(board).position;
     drag = { from, x: e.clientX, y: e.clientY, moved: false, piece: position[from] || null, node: null };
     render();
   }
@@ -303,15 +306,14 @@
     const to = inBoard(e.clientX, e.clientY) ? squareAt(e.clientX, e.clientY) : null;
 
     if (d.moved && to && to !== d.from) {
-      if (!scratch) startScratch();
-      const result = core.applyScratchMove(scratch, d.from, to);
+      const started = !line;
+      if (started) startLine();
+      const result = core.applyScratchMove(line.position, d.from, to);
       if (result) {
-        scratch = result.position;
-        moveCount += 1;
-        lastMove = { from: d.from, to };
-      } else if (moveCount === 0) {
+        line.push(result.position, { from: d.from, to });
+      } else if (started) {
         // Dragged from an empty square before any move: nothing to show.
-        scratch = null;
+        line = null;
         if (marks.size === 0) base = null;
       }
     } else if (to === d.from && isDoubleClick(d.from, e.timeStamp)) {
@@ -330,8 +332,31 @@
     if (e.button === 2 && inBoard(e.clientX, e.clientY)) swallow(e);
   }
 
+  // ---------- keyboard ----------
+
+  function isTyping(e) {
+    const t = e.target;
+    return !!t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName || ''));
+  }
+
   function onKeyDown(e) {
-    if (e.key === 'Escape' && isActive()) resetAll();
+    if (e.key === 'Escape') {
+      if (isActive()) resetAll();
+      return;
+    }
+    // While a scratch line is open, the arrow keys step through it instead of
+    // the site's move list. Plain presses only, and not while typing in chat.
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && line && !isTyping(e) && !e.altKey && !e.ctrlKey && !e.metaKey) {
+      swallow(e);
+      if (e.repeat) return;
+      if (e.key === 'ArrowLeft') line.undo();
+      else line.redo();
+      render();
+    }
+  }
+
+  function onKeyUp(e) {
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && line && !isTyping(e)) swallow(e);
   }
 
   function onCancel() {
@@ -351,6 +376,7 @@
   window.addEventListener('contextmenu', onContextMenu, true);
   window.addEventListener('auxclick', onAuxClick, true);
   window.addEventListener('keydown', onKeyDown, true);
+  window.addEventListener('keyup', onKeyUp, true);
   window.addEventListener('scroll', syncRect, true);
   window.addEventListener('resize', syncRect);
 
